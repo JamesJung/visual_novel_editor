@@ -19,3 +19,12 @@ test('effects affect play state without changing project initial values',()=>{
  assert.equal(a.run('playVars["제품 완성도"]'),40);assert.equal(a.run('data.variables["제품 완성도"]'),20);
  a.node('#playReset').onclick();assert.equal(a.run('playVars["제품 완성도"]'),20);
 });
+test('adoption archives old assets and pins existing scenes; new scenes use new master',()=>{
+ const a=app();a.run('ch().master={src:"old.png",version:1};ch().pendingMaster={src:"new.png",version:2,generation:{model:"test"}};adoptMaster()');
+ assert.equal(a.run('ch().master.src'),'new.png');assert.equal(a.run('ch().masterVersions[0].master.src'),'old.png');assert.equal(a.run('data.scenes[0].masterVersion'),1);
+ a.run('nav("play")');assert.ok(a.run('player().includes("old.png")'));
+});
+test('storage failure rolls adoption back including scene references',()=>{
+ const a=app();a.run('ch().master={src:"old.png",version:1};ch().pendingMaster={src:"new.png",version:2};localStorage.setItem=()=>{throw Error("quota")};adoptMaster()');
+ assert.equal(a.run('ch().master.src'),'old.png');assert.equal(a.run('ch().pendingMaster.src'),'new.png');assert.equal(a.run('data.scenes[0].masterVersion'),undefined);
+});
